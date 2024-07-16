@@ -1,6 +1,7 @@
 import { serve } from '@hono/node-server';
 import donate from './donate/route';
 import jupiterSwap from './jupiter-swap/route';
+import traderSwap from './trader/route';
 import heliusStake from './helius/stake/route';
 import sanctumTrade from './sanctum/trade/route';
 import tensorBuyFloor from './tensor/buy-floor/route';
@@ -21,6 +22,7 @@ app.route('/api/sanctum/trade', sanctumTrade);
 app.route('/api/tensor/buy-floor', tensorBuyFloor);
 app.route('/api/tensor/bid-nft', tensorBidNft);
 app.route('/api/meteora/swap', meteoraSwap);
+app.route('/api/trader/swap', traderSwap);
 // </--Actions-->
 
 app.doc('/doc', {
