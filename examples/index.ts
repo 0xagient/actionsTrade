@@ -22,7 +22,8 @@ app.route('/api/sanctum/trade', sanctumTrade);
 app.route('/api/tensor/buy-floor', tensorBuyFloor);
 app.route('/api/tensor/bid-nft', tensorBidNft);
 app.route('/api/meteora/swap', meteoraSwap);
-app.route('/api/trader/swap', traderSwap);
+app.route('/api/trader', traderSwap);
+
 // </--Actions-->
 
 app.doc('/doc', {

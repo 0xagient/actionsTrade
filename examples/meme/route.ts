@@ -13,7 +13,7 @@ import {
 } from '@solana/actions';
 
 export const JUPITER_LOGO =
-  'https://madlads.s3.us-west-2.amazonaws.com/images/1405.png';
+  'https://imageresizer.xnftdata.com/anim=true,fit=contain,width=600,height=600,quality=85/https://madlads.s3.us-west-2.amazonaws.com/images/1405.png';
 
 const SWAP_AMOUNT_USD_OPTIONS = [10, 100, 1000];
 const DEFAULT_SWAP_AMOUNT_USD = 10;
@@ -23,8 +23,74 @@ const US_DOLLAR_FORMATTING = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 });
 
+const getRandomToken = () => {
+  const tokens = ['WIF', 'BONK'];
+  return tokens[Math.floor(Math.random() * tokens.length)];
+};
+
 const app = new OpenAPIHono();
 
+// New endpoint for random token selection
+app.openapi(
+  createRoute({
+    method: 'get',
+    path: '/',
+    tags: ['Jupiter Swap'],
+    responses: actionsSpecOpenApiGetResponse,
+  }),
+  async (c) => {
+    const randomToken = getRandomToken();
+    const tokenPair = `${randomToken}-SOL`;
+    
+    const [inputTokenMeta, outputTokenMeta] = await Promise.all([
+      jupiterApi.lookupToken(randomToken),
+      jupiterApi.lookupToken('SOL'),
+    ]);
+
+    if (!inputTokenMeta || !outputTokenMeta) {
+      return Response.json({
+        icon: JUPITER_LOGO,
+        label: 'Not Available',
+        title: `Random Swap`,
+        description: `Swap randomly selected token with SOL.`,
+        disabled: true,
+        error: {
+          message: `Token metadata not found.`,
+        },
+      } satisfies ActionGetResponse);
+    }
+
+    const amountParameterName = 'amount';
+    const response: ActionGetResponse = {
+      icon: JUPITER_LOGO,
+      label: `Swap ${inputTokenMeta.symbol} for SOL`,
+      title: `Random Swap: ${inputTokenMeta.symbol} to SOL`,
+      description: `Randomly selected to swap ${inputTokenMeta.symbol} for SOL. Choose a USD amount or enter a custom amount.`,
+      links: {
+        actions: [
+          ...SWAP_AMOUNT_USD_OPTIONS.map((amount) => ({
+            label: `${US_DOLLAR_FORMATTING.format(amount)}`,
+            href: `/api/trader/swap/${tokenPair}/${amount}`,
+          })),
+          {
+            href: `/api/trader/swap/${tokenPair}/{${amountParameterName}}`,
+            label: `Swap ${inputTokenMeta.symbol}`,
+            parameters: [
+              {
+                name: amountParameterName,
+                label: 'Enter a custom USD amount',
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    return c.json(response);
+  },
+);
+
+// Existing endpoint for specific token pair
 app.openapi(
   createRoute({
     method: 'get',
@@ -57,11 +123,11 @@ app.openapi(
       return Response.json({
         icon: JUPITER_LOGO,
         label: 'Not Available',
-        title: `Ape into ${outputToken}`,
-        description: `Ape into ${outputToken} with ${inputToken}.`,
+        title: `Buy ${outputToken}`,
+        description: `Buy ${outputToken} with ${inputToken}.`,
         disabled: true,
         error: {
-          message: `Token metadata ghosted us. Much sadness.`,
+          message: `Token metadata not found.`,
         },
       } satisfies ActionGetResponse);
     }
@@ -69,22 +135,22 @@ app.openapi(
     const amountParameterName = 'amount';
     const response: ActionGetResponse = {
       icon: JUPITER_LOGO,
-      label: `Ape into ${outputTokenMeta.symbol}`,
-      title: `Ape into ${outputTokenMeta.symbol}`,
-      description: `Ape into ${outputTokenMeta.symbol} with your ${inputTokenMeta.symbol} stash. Pick a YOLO amount of ${inputTokenMeta.symbol} from the options below, or go full degen with a custom amount.`,
+      label: `Buy ${outputTokenMeta.symbol}`,
+      title: `Buy ${outputTokenMeta.symbol}`,
+      description: `Buy ${outputTokenMeta.symbol} with ${inputTokenMeta.symbol}. Choose a USD amount of ${inputTokenMeta.symbol} from the options below, or enter a custom amount.`,
       links: {
         actions: [
-          ...SWAP_AMOUNT_USD_OPTIONS.map((amount, index) => ({
-            label: `${US_DOLLAR_FORMATTING.format(amount)} ${getHumorousLabel(index)}`,
-            href: `/api/jupiter/swap/${tokenPair}/${amount}`,
+          ...SWAP_AMOUNT_USD_OPTIONS.map((amount) => ({
+            label: `${US_DOLLAR_FORMATTING.format(amount)}`,
+            href: `/api/trader/swap/${tokenPair}/${amount}`,
           })),
           {
-            href: `/api/jupiter/swap/${tokenPair}/{${amountParameterName}}`,
-            label: `Ape into ${outputTokenMeta.symbol} like there's no tomorrow`,
+            href: `/api/trader/swap/${tokenPair}/{${amountParameterName}}`,
+            label: `Buy ${outputTokenMeta.symbol}`,
             parameters: [
               {
                 name: amountParameterName,
-                label: 'Enter a custom YOLO amount',
+                label: 'Enter a custom USD amount',
               },
             ],
           },
@@ -139,20 +205,20 @@ app.openapi(
       return Response.json({
         icon: JUPITER_LOGO,
         label: 'Not Available',
-        title: `Ape into ${outputToken}`,
-        description: `Ape into ${outputToken} with ${inputToken}.`,
+        title: `Buy ${outputToken}`,
+        description: `Buy ${outputToken} with ${inputToken}.`,
         disabled: true,
         error: {
-          message: `Token metadata ghosted us. Much sadness.`,
+          message: `Token metadata not found.`,
         },
       } satisfies ActionGetResponse);
     }
 
     const response: ActionGetResponse = {
       icon: JUPITER_LOGO,
-      label: `Ape into ${outputTokenMeta.symbol}`,
-      title: `Ape into ${outputTokenMeta.symbol} with ${inputTokenMeta.symbol}`,
-      description: `Ape into ${outputTokenMeta.symbol} with ${inputTokenMeta.symbol}. Warning: This Action is as unregistered as your crypto gains. Only use it if you trust the source more than your ex. This Action won't go viral on X until it's officially a thing.`,
+      label: `Buy ${outputTokenMeta.symbol}`,
+      title: `Buy ${outputTokenMeta.symbol} with ${inputTokenMeta.symbol}`,
+      description: `Buy ${outputTokenMeta.symbol} with ${inputTokenMeta.symbol}.`,
     };
 
     return c.json(response);
@@ -205,7 +271,7 @@ app.openapi(
     if (!inputTokenMeta || !outputTokenMeta) {
       return Response.json(
         {
-          message: `Token metadata ghosted us. Much sadness.`,
+          message: `Token metadata not found.`,
         } satisfies ActionError,
         {
           status: 422,
@@ -219,7 +285,7 @@ app.openapi(
     if (!tokenPriceUsd) {
       return Response.json(
         {
-          message: `Failed to get price for ${inputTokenMeta.symbol}. The oracle must be on vacation.`,
+          message: `Failed to get price for ${inputTokenMeta.symbol}.`,
         } satisfies ActionError,
         {
           status: 422,
@@ -231,7 +297,7 @@ app.openapi(
       tokenAmount * 10 ** inputTokenMeta.decimals,
     );
     console.log(
-      `YOLOing ${tokenAmountFractional} ${inputTokenMeta.symbol} into ${outputTokenMeta.symbol}    
+      `Swapping ${tokenAmountFractional} ${inputTokenMeta.symbol} to ${outputTokenMeta.symbol}    
   usd amount: ${amount}
   token usd price: ${tokenPriceUsd.price}
   token amount: ${tokenAmount}
@@ -243,7 +309,7 @@ app.openapi(
       outputMint: outputTokenMeta.address,
       amount: tokenAmountFractional,
       autoSlippage: true,
-      maxAutoSlippageBps: 500, // 5%, because we like to live dangerously
+      maxAutoSlippageBps: 500, // 5%,
     });
     const swapResponse = await jupiterApi.swapPost({
       swapRequest: {
@@ -258,14 +324,5 @@ app.openapi(
     return c.json(response);
   },
 );
-
-function getHumorousLabel(index: number): string {
-  const labels = [
-    "(AKA one ramen packet)",
-    "(Your entire \"food\" budget)",
-    "(Rent? What rent?)"
-  ];
-  return labels[index] || "";
-}
 
 export default app;
